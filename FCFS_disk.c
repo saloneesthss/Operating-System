@@ -1,6 +1,5 @@
 #include<stdio.h>
 #include<conio.h>
-
 int main() {
     int i, n, head;
     int queue[20];
@@ -20,7 +19,7 @@ int main() {
 
     for (i = 0; i < n; i++) {
         printf("%d -> ", queue[i]);
-        seek_count += abs(head - queue[i]);
+        seek_count += head - queue[i];
         head = queue[i];
     }
 
