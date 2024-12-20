@@ -1,9 +1,9 @@
+// C program for the above approach
 #include <stdio.h>
 #include <stdlib.h>
-#include <semaphore.h>
 
-// Initialize a semaphore to 1
-sem_t mutex;
+// Initialize a mutex to 1
+int mutex = 1;
 
 // Number of full slots as 0
 int full = 0;
@@ -16,11 +16,8 @@ int empty = 10, x = 0;
 // add it to the buffer
 void producer()
 {
-    // Wait on empty semaphore
-    sem_wait(&empty);
-
-    // Wait on mutex semaphore
-    sem_wait(&mutex);
+    // Decrease mutex value by 1
+    --mutex;
 
     // Increase the number of full
     // slots by 1
@@ -33,48 +30,34 @@ void producer()
     // Item produced
     x++;
     printf("\nProducer produces"
-           " item %d",
+           "item %d",
            x);
 
-    // Signal mutex semaphore
-    sem_post(&mutex);
+    // Increase mutex value by 1
+    ++mutex;
 }
 
 // Function to consume an item and
 // remove it from buffer
 void consumer()
 {
-    // Wait on full semaphore
-    sem_wait(&full);
-
-    // Wait on mutex semaphore
-    sem_wait(&mutex);
+    // Decrease mutex value by 1
+    --mutex;
 
     // Decrease the number of full
     // slots by 1
     --full;
 
-    if (x > 0)
-    {
-        printf("\nConsumer consumes "
-               "item %d",
-               x);
-        x--;
-    }
-    else
-    {
-        printf("\nBuffer is empty!");
-    }
-
     // Increase the number of empty
     // slots by 1
     ++empty;
+    printf("\nConsumer consumes "
+           "item %d",
+           x);
+    x--;
 
-    // Signal mutex semaphore
-    sem_post(&mutex);
-
-    // Signal empty semaphore
-    sem_post(&empty);
+    // Increase mutex value by 1
+    ++mutex;
 }
 
 // Driver Code
@@ -85,63 +68,59 @@ int main()
            "\n2. Press 2 for Consumer"
            "\n3. Press 3 for Exit");
 
-    // Initialize mutex semaphore to 1
-    sem_init(&mutex, 0, 1);
+// Using '#pragma omp parallel for'
+// can  give wrong value due to
+// synchronization issues.
 
-    // Initialize full semaphore to 0
-    sem_init(&full, 0, 0);
+// 'critical' specifies that code is
+// executed by only one thread at a
+// time i.e., only one thread enters
+// the critical section at a given time
+#pragma omp critical
 
-    // Initialize empty semaphore to size of buffer
-    sem_init(&empty, 0, 10);
-
-    for (i = 1; i > 0; i++)
-    {
+    for (i = 1; i > 0; i++) {
 
         printf("\nEnter your choice:");
         scanf("%d", &n);
 
         // Switch Cases
-        switch (n)
-        {
+        switch (n) {
         case 1:
 
-            // If empty is non-zero, then it is
+            // If mutex is 1 and empty
+            // is non-zero, then it is
             // possible to produce
-            if (empty != 0)
-            {
+            if ((mutex == 1)
+                && (empty != 0)) {
                 producer();
             }
 
             // Otherwise, print buffer
             // is full
-            else
-            {
+            else {
                 printf("Buffer is full!");
             }
             break;
 
         case 2:
 
-            // If full is non-zero, then it is
+            // If mutex is 1 and full
+            // is non-zero, then it is
             // possible to consume
-            if (full != 0)
-            {
+            if ((mutex == 1)
+                && (full != 0)) {
                 consumer();
             }
 
             // Otherwise, print Buffer
             // is empty
-            else
-            {
+            else {
                 printf("Buffer is empty!");
             }
             break;
 
         // Exit Condition
         case 3:
-            sem_destroy(&mutex);
-            sem_destroy(&full);
-            sem_destroy(&empty);
             exit(0);
             break;
         }
